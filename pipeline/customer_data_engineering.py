@@ -5,7 +5,7 @@ from pathlib import Path
 def customer_extract_validate():
 
     customers = pd.read_csv(
-        "data/customers.csv",
+        "data/csv_files/customers.csv",
         encoding="utf-8-sig"
     )
 
@@ -146,6 +146,24 @@ def customer_extract_validate():
         .str.title()
     )
 
+    # ======================
+    # Save Clean Records
+    # ======================
+
+    cleaned_path = Path(
+        "data/cleaned"
+    )
+
+    cleaned_path.mkdir(
+        parents=True,
+        exist_ok=True
+    )
+
+    customers_copy.to_csv(
+        cleaned_path / "clean_customers.csv",
+        index=False
+    )
+
     return customers_copy, rejected_customers
 
 
@@ -154,7 +172,6 @@ if __name__ == "__main__":
     valid_customers, rejected_customers = (
         customer_extract_validate()
     )
-
 
     print("\nValid Customers")
     print(valid_customers)

@@ -1,0 +1,6 @@
+customer_id,customer_name,email,mobile,city,registration_date,customer_type,rejection_reason
+,Customer Missing ID,user@gmail.com,9876543220,Noida,2024-01-11,Premium,Missing Customer ID
+C110,,akash@gmail.com,9876543219,Mumbai,2024-01-10,Regular,Missing Customer Name
+C109,Rohit Verma,invalid-email,9876543218,Pune,2024-01-09,Premium,Invalid Email
+C101,Rahul Sharma,rahul@gmail.com,9876543210,Delhi,2024-01-01,Regular,Duplicate Customer ID
+C101,Duplicate User,dup@gmail.com,9876543221,Delhi,2024-01-12,Regular,Duplicate Customer ID

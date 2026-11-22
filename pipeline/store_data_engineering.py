@@ -5,7 +5,7 @@ from pathlib import Path
 def store_extract_validate():
 
     stores = pd.read_csv(
-        "data/stores.csv",
+        "data/csv_files/stores.csv",
         encoding="utf-8-sig"
     )
 
@@ -25,8 +25,6 @@ def store_extract_validate():
     # Rejected Records
     # ==========================
 
-    # Missing Store ID
-
     rejected_store_id = stores_copy[
         stores_copy["store_id"].isna()
     ].copy()
@@ -34,8 +32,6 @@ def store_extract_validate():
     rejected_store_id["rejection_reason"] = (
         "Missing Store ID"
     )
-
-    # Missing Store Name
 
     rejected_store_name = stores_copy[
         stores_copy["store_name"].isna()
@@ -45,8 +41,6 @@ def store_extract_validate():
         "Missing Store Name"
     )
 
-    # Missing City
-
     rejected_city = stores_copy[
         stores_copy["city"].isna()
     ].copy()
@@ -54,8 +48,6 @@ def store_extract_validate():
     rejected_city["rejection_reason"] = (
         "Missing City"
     )
-
-    # Duplicate Store ID
 
     rejected_duplicate = stores_copy[
         stores_copy.duplicated(
@@ -67,8 +59,6 @@ def store_extract_validate():
     rejected_duplicate["rejection_reason"] = (
         "Duplicate Store ID"
     )
-
-    # Combine All Rejected Records
 
     rejected_stores = pd.concat(
         [
@@ -155,6 +145,24 @@ def store_extract_validate():
         .astype(str)
         .str.strip()
         .str.title()
+    )
+
+    # ==========================
+    # Save Clean Records
+    # ==========================
+
+    cleaned_path = Path(
+        "data/cleaned"
+    )
+
+    cleaned_path.mkdir(
+        parents=True,
+        exist_ok=True
+    )
+
+    stores_copy.to_csv(
+        cleaned_path / "clean_stores.csv",
+        index=False
     )
 
     return stores_copy, rejected_stores
