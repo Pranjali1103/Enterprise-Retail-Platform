@@ -1,0 +1,7 @@
+product_id,product_name,category,brand,unit_price,supplier_id,status,reject_reason
+,Perk,Chocolate,Cadbury,20,SUP01,Active,Missing Product ID
+P111,,Chocolate,Cadbury,60,SUP01,Active,Missing Product Name
+P112,Munch,Chocolate,Nestle,0,SUP02,Active,Invalid Unit Price
+P113,5 Star,Chocolate,Cadbury,-10,SUP01,Active ,Invalid Unit Price
+P110,Colgate Toothpaste,Personal Care,Colgate,90,SUP09,Active,Duplicate Product ID
+P110,Duplicate Product,TestBrand,Test,100,SUP10,Active,Duplicate Product ID

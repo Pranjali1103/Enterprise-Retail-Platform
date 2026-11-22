@@ -1,0 +1,11 @@
+product_id,product_name,category,brand,unit_price,supplier_id,status
+P101,Dairy Milk,Chocolate,Cadbury,50,SUP01,Active
+P102,Kitkat,Chocolate,Nestle,30,SUP02,Active
+P103,Lays Classic,Snacks,Lays,20,SUP03,Active
+P104,Coke,Soft Drink,Coca Cola,40,SUP04,Active
+P105,Maggi Noodles,Noodles,Nestle,15,SUP02,Active
+P106,Bourbon,Biscuit,Britannia,35,SUP05,Active
+P107,Amul Butter,Dairy,Amul,55,SUP06,Active
+P108,Aashirvaad Atta,Grocery,Itc,350,SUP07,Active
+P109,Dettol Soap,Personal Care,Dettol,45,SUP08,Active
+P110,Colgate Toothpaste,Personal Care,Colgate,90,SUP09,Active

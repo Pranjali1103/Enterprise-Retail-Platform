@@ -1,0 +1,5 @@
+inventory_id,product_id,store_id,available_quantity,reorder_level,last_updated,reject_reason
+INV013,,S101,50,10,2024-06-01,Missing Product ID
+INV014,P103,,25,5,2024-06-01,Missing Store ID
+INV011,P101,S104,-5,10,2024-06-01,Invalid Available Quantity
+INV012,P102,S105,10,-1,2024-06-01,Invalid Reorder Level
