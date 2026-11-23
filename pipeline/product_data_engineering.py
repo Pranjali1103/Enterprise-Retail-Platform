@@ -3,9 +3,8 @@ import pandas as pd
 
 
 def product_extract() -> pd.DataFrame:
-
     products = pd.read_csv(
-        "data/Products.csv",
+        "data/csv_files/products.csv",
         encoding="utf-8-sig"
     )
 
@@ -26,40 +25,36 @@ def product_extract() -> pd.DataFrame:
 
 
 def clean_products(products: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
-
     products_copy = products.copy()
 
-
-
+    # Reject missing Product ID
     rejected_product_id = products_copy[
         products_copy["product_id"].isna()
     ].copy()
+    rejected_product_id["rejection_reason"] = "Missing Product ID"
 
-    rejected_product_id["reject_reason"] = "Missing Product ID"
-
+    # Reject missing Product Name
     rejected_product_name = products_copy[
         products_copy["product_name"].isna()
     ].copy()
+    rejected_product_name["rejection_reason"] = "Missing Product Name"
 
-    rejected_product_name["reject_reason"] = "Missing Product Name"
-
+    # Reject invalid Price
     rejected_price = products_copy[
         products_copy["unit_price"] <= 0
     ].copy()
+    rejected_price["rejection_reason"] = "Invalid Unit Price"
 
-    rejected_price["reject_reason"] = "Invalid Unit Price"
-
+    # Reject duplicate Product IDs
     rejected_duplicates = products_copy[
         products_copy.duplicated(
             subset=["product_id"],
             keep=False
         )
     ].copy()
+    rejected_duplicates["rejection_reason"] = "Duplicate Product ID"
 
-    rejected_duplicates["reject_reason"] = "Duplicate Product ID"
-
-    # Combine all rejected records
-
+    # Combine rejected records
     rejected_products = pd.concat(
         [
             rejected_product_id,
@@ -68,16 +63,12 @@ def clean_products(products: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
             rejected_duplicates
         ],
         ignore_index=True
-    )
+    ).drop_duplicates()
 
-    # Remove duplicate rejected rows
+    # Get duplicate IDs
+    duplicate_ids = rejected_duplicates["product_id"].unique()
 
-    rejected_products = rejected_products.drop_duplicates()
-
-    # -------------------------
-    # Remove Invalid Records
-    # -------------------------
-
+    # Remove invalid records
     products_copy = products_copy[
         products_copy["product_id"].notna()
     ]
@@ -90,14 +81,12 @@ def clean_products(products: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
         products_copy["unit_price"] > 0
     ]
 
-    products_copy = products_copy.drop_duplicates(
-        subset=["product_id"]
-    )
+    # Remove all duplicate Product IDs
+    products_copy = products_copy[
+        ~products_copy["product_id"].isin(duplicate_ids)
+    ]
 
-    # -------------------------
-    # Data Cleaning
-    # -------------------------
-
+    # Clean Product Name
     products_copy["product_name"] = (
         products_copy["product_name"]
         .astype(str)
@@ -105,6 +94,7 @@ def clean_products(products: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
         .str.title()
     )
 
+    # Clean Category
     products_copy["category"] = (
         products_copy["category"]
         .fillna("Unknown Category")
@@ -113,6 +103,7 @@ def clean_products(products: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
         .str.title()
     )
 
+    # Clean Brand
     products_copy["brand"] = (
         products_copy["brand"]
         .fillna("Unknown Brand")
@@ -121,6 +112,7 @@ def clean_products(products: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
         .str.title()
     )
 
+    # Clean Supplier ID
     products_copy["supplier_id"] = (
         products_copy["supplier_id"]
         .fillna("Unknown Supplier")
@@ -129,6 +121,7 @@ def clean_products(products: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
         .str.upper()
     )
 
+    # Clean Status
     products_copy["status"] = (
         products_copy["status"]
         .fillna("Active")
@@ -141,8 +134,6 @@ def clean_products(products: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
 
 
 if __name__ == "__main__":
-
-    
 
     Path("data/cleaned").mkdir(
         parents=True,
@@ -166,17 +157,13 @@ if __name__ == "__main__":
     print("\n========== REJECTED PRODUCTS ==========")
     print(rejected_products)
 
-    print(f"\nValid Records    : {len(cleaned_products)}")
+    print(f"\nValid Records : {len(cleaned_products)}")
     print(f"Rejected Records : {len(rejected_products)}")
-
-    # Save cleaned data
 
     cleaned_products.to_csv(
         "data/cleaned/cleaned_products.csv",
         index=False
     )
-
-    # Save rejected data
 
     rejected_products.to_csv(
         "data/rejected/rejected_products.csv",

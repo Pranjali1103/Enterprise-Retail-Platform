@@ -1,183 +1,265 @@
-import pandas as pd
 from pathlib import Path
+import pandas as pd
 
 
-def customer_extract_validate():
+def inventory_extract() -> pd.DataFrame:
 
-    customers = pd.read_csv(
-        "data/csv_files/customers.csv",
+    inventory = pd.read_csv(
+        "data/csv_files/inventory.csv",
         encoding="utf-8-sig"
     )
 
-    customers.columns = (
-        customers.columns
+    print("\n========== Original Data ==========")
+    print(inventory)
+
+    inventory.columns = (
+        inventory.columns
         .astype(str)
         .str.replace("\ufeff", "", regex=False)
+        .str.replace("*", "", regex=False)
         .str.strip()
         .str.lower()
     )
 
-    customers_copy = customers.copy()
+    print("\nColumns of Inventory:", inventory.columns.to_list())
 
-    # ======================
+    return inventory
+
+
+def clean_inventory(
+    inventory: pd.DataFrame
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+
+    inventory_copy = inventory.copy()
+
+    # ==========================
     # Rejected Records
-    # ======================
+    # ==========================
 
-    rejected_customer_id = customers_copy[
-        customers_copy["customer_id"].isna()
+    rejected_inventory_id = inventory_copy[
+        inventory_copy["inventory_id"].isna()
     ].copy()
 
-    rejected_customer_id[
-        "rejection_reason"
-    ] = "Missing Customer ID"
+    rejected_inventory_id["reject_reason"] = (
+        "Missing Inventory ID"
+    )
 
-    rejected_customer_name = customers_copy[
-        customers_copy["customer_name"].isna()
+    rejected_product_id = inventory_copy[
+        inventory_copy["product_id"].isna()
     ].copy()
 
-    rejected_customer_name[
-        "rejection_reason"
-    ] = "Missing Customer Name"
+    rejected_product_id["reject_reason"] = (
+        "Missing Product ID"
+    )
 
-    rejected_email = customers_copy[
-        ~customers_copy["email"].astype(str).str.contains(
-            r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$",
-            regex=True,
-            na=False
-        )
+    rejected_store_id = inventory_copy[
+        inventory_copy["store_id"].isna()
     ].copy()
 
-    rejected_email[
-        "rejection_reason"
-    ] = "Invalid Email"
+    rejected_store_id["reject_reason"] = (
+        "Missing Store ID"
+    )
 
-    rejected_duplicate = customers_copy[
-        customers_copy.duplicated(
-            subset=["customer_id"],
+    rejected_quantity = inventory_copy[
+        inventory_copy["available_quantity"] < 0
+    ].copy()
+
+    rejected_quantity["reject_reason"] = (
+        "Invalid Available Quantity"
+    )
+
+    rejected_reorder_level = inventory_copy[
+        inventory_copy["reorder_level"] < 0
+    ].copy()
+
+    rejected_reorder_level["reject_reason"] = (
+        "Invalid Reorder Level"
+    )
+
+    rejected_duplicates = inventory_copy[
+        inventory_copy.duplicated(
+            subset=["inventory_id"],
             keep=False
         )
     ].copy()
 
-    rejected_duplicate[
-        "rejection_reason"
-    ] = "Duplicate Customer ID"
+    rejected_duplicates["reject_reason"] = (
+        "Duplicate Inventory ID"
+    )
 
-    rejected_customers = pd.concat(
+    rejected_last_updated = inventory_copy[
+        pd.to_datetime(
+            inventory_copy["last_updated"],
+            errors="coerce"
+        ).isna()
+    ].copy()
+
+    rejected_last_updated["reject_reason"] = (
+        "Invalid Last Updated Date"
+    )
+
+    # Combine Rejected Records
+
+    rejected_inventory = pd.concat(
         [
-            rejected_customer_id,
-            rejected_customer_name,
-            rejected_email,
-            rejected_duplicate
+            rejected_inventory_id,
+            rejected_product_id,
+            rejected_store_id,
+            rejected_quantity,
+            rejected_reorder_level,
+            rejected_duplicates,
+            rejected_last_updated
         ],
         ignore_index=True
     )
 
-    # ======================
-    # Save Rejected Records
-    # ======================
-
-    rejected_path = Path(
-        "data/rejected/customers"
+    rejected_inventory = (
+        rejected_inventory
+        .drop_duplicates()
     )
 
-    rejected_path.mkdir(
-        parents=True,
-        exist_ok=True
+    # ==========================
+    # Remove Invalid Records
+    # ==========================
+
+    duplicate_ids = (
+        rejected_duplicates["inventory_id"]
+        .dropna()
+        .unique()
     )
 
-    rejected_customers.to_csv(
-        rejected_path / "rejected_customers.csv",
-        index=False
-    )
-
-    # ======================
-    # Remove Rejected Records
-    # ======================
-
-    customers_copy = customers_copy[
-        customers_copy["customer_id"].notna()
+    inventory_copy = inventory_copy[
+        inventory_copy["inventory_id"].notna()
     ]
 
-    customers_copy = customers_copy[
-        customers_copy["customer_name"].notna()
+    inventory_copy = inventory_copy[
+        inventory_copy["product_id"].notna()
     ]
 
-    customers_copy = customers_copy[
-        customers_copy["email"].astype(str).str.contains(
-            r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$",
-            regex=True,
-            na=False
+    inventory_copy = inventory_copy[
+        inventory_copy["store_id"].notna()
+    ]
+
+    inventory_copy = inventory_copy[
+        inventory_copy["available_quantity"] >= 0
+    ]
+
+    inventory_copy = inventory_copy[
+        inventory_copy["reorder_level"] >= 0
+    ]
+
+    inventory_copy = inventory_copy[
+        pd.to_datetime(
+            inventory_copy["last_updated"],
+            errors="coerce"
+        ).notna()
+    ]
+
+    # Remove ALL duplicate inventory IDs
+
+    inventory_copy = inventory_copy[
+        ~inventory_copy["inventory_id"].isin(
+            duplicate_ids
         )
     ]
 
-    customers_copy = customers_copy.drop_duplicates(
-        subset=["customer_id"]
-    )
+    # ==========================
+    # Data Cleaning
+    # ==========================
 
-    # ======================
-    # Cleaning / Transformation
-    # ======================
-
-    customers_copy["customer_name"] = (
-        customers_copy["customer_name"]
+    inventory_copy["inventory_id"] = (
+        inventory_copy["inventory_id"]
         .astype(str)
         .str.strip()
-        .str.title()
+        .str.upper()
     )
 
-    customers_copy["email"] = (
-        customers_copy["email"]
+    inventory_copy["product_id"] = (
+        inventory_copy["product_id"]
         .astype(str)
         .str.strip()
-        .str.lower()
+        .str.upper()
     )
 
-    customers_copy["city"] = (
-        customers_copy["city"]
+    inventory_copy["store_id"] = (
+        inventory_copy["store_id"]
         .astype(str)
         .str.strip()
-        .str.title()
+        .str.upper()
     )
 
-    customers_copy["customer_type"] = (
-        customers_copy["customer_type"]
-        .astype(str)
-        .str.strip()
-        .str.title()
+    inventory_copy["available_quantity"] = (
+        pd.to_numeric(
+            inventory_copy["available_quantity"],
+            errors="coerce"
+        )
     )
 
-    # ======================
-    # Save Clean Records
-    # ======================
-
-    cleaned_path = Path(
-        "data/cleaned"
+    inventory_copy["reorder_level"] = (
+        pd.to_numeric(
+            inventory_copy["reorder_level"],
+            errors="coerce"
+        )
     )
 
-    cleaned_path.mkdir(
-        parents=True,
-        exist_ok=True
+    inventory_copy["last_updated"] = pd.to_datetime(
+        inventory_copy["last_updated"],
+        errors="coerce"
     )
 
-    customers_copy.to_csv(
-        cleaned_path / "clean_customers.csv",
-        index=False
-    )
-
-    return customers_copy, rejected_customers
+    return inventory_copy, rejected_inventory
 
 
 if __name__ == "__main__":
 
-    valid_customers, rejected_customers = (
-        customer_extract_validate()
+    Path("data/cleaned").mkdir(
+        parents=True,
+        exist_ok=True
     )
 
-    print("\nValid Customers")
-    print(valid_customers)
+    Path("data/rejected").mkdir(
+        parents=True,
+        exist_ok=True
+    )
 
-    print("\nRejected Customers")
-    print(rejected_customers)
+    inventory = inventory_extract()
 
-    print(f"\nValid Count: {len(valid_customers)}")
-    print(f"Rejected Count: {len(rejected_customers)}")
+    cleaned_inventory, rejected_inventory = (
+        clean_inventory(inventory)
+    )
+
+    print(
+        "\n========== CLEANED INVENTORY =========="
+    )
+    print(cleaned_inventory)
+
+    print(
+        "\n========== REJECTED INVENTORY =========="
+    )
+    print(rejected_inventory)
+
+    print(
+        f"\nValid Records : {len(cleaned_inventory)}"
+    )
+
+    print(
+        f"Rejected Records : {len(rejected_inventory)}"
+    )
+
+    cleaned_inventory.to_csv(
+        "data/cleaned/cleaned_inventory.csv",
+        index=False
+    )
+
+    rejected_inventory.to_csv(
+        "data/rejected/rejected_inventory.csv",
+        index=False
+    )
+
+    print("\nFiles Generated Successfully!")
+
+    print(
+        "\nCreated:\n"
+        "data/cleaned/cleaned_inventory.csv\n"
+        "data/rejected/rejected_inventory.csv"
+    )

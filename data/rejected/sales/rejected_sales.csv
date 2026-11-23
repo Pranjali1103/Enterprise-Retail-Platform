@@ -1,0 +1,7 @@
+sale_id,product_id,store_id,customer_id,quantity,sale_date,discount_percentage,payment_mode,rejection_reason
+, P103,S103,C103,2,2024-06-16,5,Cash,Sale ID Missing
+SALE014,,,C103,5,2024-06-15,0,UPI,Product ID Missing
+SALE014,,,C103,5,2024-06-15,0,UPI,Store ID Missing
+SALE013,P102,S102,C102,0,2024-06-14,5,Cash,Quantity must be greater than zero
+SALE010,P110,S103,C103,2,2024-06-10,10,Credit Card,Duplicate Sale ID
+SALE010,P101,S101,C101,1,2024-06-11,5,Cash,Duplicate Sale ID

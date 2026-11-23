@@ -1,5 +1,5 @@
-import pandas as pd
 from pathlib import Path
+import pandas as pd
 
 
 def store_extract_validate():
@@ -70,6 +70,11 @@ def store_extract_validate():
         ignore_index=True
     )
 
+    rejected_stores = (
+        rejected_stores
+        .drop_duplicates()
+    )
+
     # ==========================
     # Save Rejected Records
     # ==========================
@@ -92,6 +97,12 @@ def store_extract_validate():
     # Remove Rejected Records
     # ==========================
 
+    duplicate_ids = (
+        rejected_duplicate["store_id"]
+        .dropna()
+        .unique()
+    )
+
     stores_copy = stores_copy[
         stores_copy["store_id"].notna()
     ]
@@ -104,13 +115,24 @@ def store_extract_validate():
         stores_copy["city"].notna()
     ]
 
-    stores_copy = stores_copy.drop_duplicates(
-        subset=["store_id"]
-    )
+    # Remove ALL duplicate Store IDs
+
+    stores_copy = stores_copy[
+        ~stores_copy["store_id"].isin(
+            duplicate_ids
+        )
+    ]
 
     # ==========================
     # Cleaning / Transformation
     # ==========================
+
+    stores_copy["store_id"] = (
+        stores_copy["store_id"]
+        .astype(str)
+        .str.strip()
+        .str.upper()
+    )
 
     stores_copy["store_name"] = (
         stores_copy["store_name"]
@@ -180,5 +202,18 @@ if __name__ == "__main__":
     print("\nREJECTED STORES\n")
     print(rejected_stores)
 
-    print(f"\nValid Store Count: {len(valid_stores)}")
-    print(f"Rejected Store Count: {len(rejected_stores)}")
+    print(
+        f"\nValid Store Count: {len(valid_stores)}"
+    )
+
+    print(
+        f"Rejected Store Count: {len(rejected_stores)}"
+    )
+
+    print("\nFiles Generated Successfully!")
+
+    print(
+        "\nCreated:\n"
+        "data/cleaned/clean_stores.csv\n"
+        "data/rejected/stores/rejected_stores.csv"
+    )

@@ -1,26 +1,53 @@
 from pathlib import Path
 import pandas as pd
 
+
+# ==========================
 # Directories
-REJECTED_DIR = Path("data/rejected/sales")
-CLEANED_DIR = Path("data/cleaned/sales")
+# ==========================
 
-# Create directories if they don't exist
-REJECTED_DIR.mkdir(parents=True, exist_ok=True)
-CLEANED_DIR.mkdir(parents=True, exist_ok=True)
+REJECTED_DIR = Path("data/rejected")
+CLEANED_DIR = Path("data/cleaned")
+
+REJECTED_DIR.mkdir(
+    parents=True,
+    exist_ok=True
+)
+
+CLEANED_DIR.mkdir(
+    parents=True,
+    exist_ok=True
+)
 
 
-def extract_sales():
-    sales_df = pd.read_csv("data/csv_files/sales.csv")
+# ==========================
+# Extract
+# ==========================
+
+def extract_sales() -> pd.DataFrame:
+
+    sales_df = pd.read_csv(
+        "data/csv_files/sales.csv",
+        encoding="utf-8-sig"
+    )
+
     return sales_df
 
 
-def clean_sales(sales_df):
+# ==========================
+# Clean Column Names
+# ==========================
+
+def clean_sales(
+    sales_df: pd.DataFrame
+) -> pd.DataFrame:
 
     sales_df = sales_df.copy()
 
     sales_df.columns = (
         sales_df.columns
+        .astype(str)
+        .str.replace("\ufeff", "", regex=False)
         .str.strip()
         .str.lower()
     )
@@ -28,52 +55,118 @@ def clean_sales(sales_df):
     return sales_df
 
 
-def validate_sales(sales_df):
+# ==========================
+# Validate Sales
+# ==========================
+
+def validate_sales(
+    sales_df: pd.DataFrame
+) -> pd.DataFrame:
 
     rejected_records = []
 
     # Missing Sale ID
-    missing_sale_id = sales_df[sales_df["sale_id"].isna()].copy()
-    missing_sale_id["rejection_reason"] = "Sale ID Missing"
-    rejected_records.append(missing_sale_id)
+    missing_sale_id = sales_df[
+        sales_df["sale_id"].isna()
+    ].copy()
+
+    missing_sale_id["rejection_reason"] = (
+        "Missing Sale ID"
+    )
+
+    rejected_records.append(
+        missing_sale_id
+    )
 
     # Missing Product ID
-    missing_product = sales_df[sales_df["product_id"].isna()].copy()
-    missing_product["rejection_reason"] = "Product ID Missing"
-    rejected_records.append(missing_product)
+    missing_product = sales_df[
+        sales_df["product_id"].isna()
+    ].copy()
+
+    missing_product["rejection_reason"] = (
+        "Missing Product ID"
+    )
+
+    rejected_records.append(
+        missing_product
+    )
 
     # Missing Store ID
-    missing_store = sales_df[sales_df["store_id"].isna()].copy()
-    missing_store["rejection_reason"] = "Store ID Missing"
-    rejected_records.append(missing_store)
+    missing_store = sales_df[
+        sales_df["store_id"].isna()
+    ].copy()
+
+    missing_store["rejection_reason"] = (
+        "Missing Store ID"
+    )
+
+    rejected_records.append(
+        missing_store
+    )
 
     # Missing Customer ID
-    missing_customer = sales_df[sales_df["customer_id"].isna()].copy()
-    missing_customer["rejection_reason"] = "Customer ID Missing"
-    rejected_records.append(missing_customer)
+    missing_customer = sales_df[
+        sales_df["customer_id"].isna()
+    ].copy()
+
+    missing_customer["rejection_reason"] = (
+        "Missing Customer ID"
+    )
+
+    rejected_records.append(
+        missing_customer
+    )
 
     # Invalid Quantity
-    invalid_quantity = sales_df[sales_df["quantity"] <= 0].copy()
-    invalid_quantity["rejection_reason"] = "Quantity must be greater than zero"
-    rejected_records.append(invalid_quantity)
+    invalid_quantity = sales_df[
+        sales_df["quantity"] <= 0
+    ].copy()
+
+    invalid_quantity["rejection_reason"] = (
+        "Invalid Quantity"
+    )
+
+    rejected_records.append(
+        invalid_quantity
+    )
 
     # Duplicate Sale ID
     duplicate_sales = sales_df[
-        sales_df.duplicated(subset=["sale_id"], keep=False)
+        sales_df.duplicated(
+            subset=["sale_id"],
+            keep=False
+        )
     ].copy()
 
-    duplicate_sales["rejection_reason"] = "Duplicate Sale ID"
-    rejected_records.append(duplicate_sales)
+    duplicate_sales["rejection_reason"] = (
+        "Duplicate Sale ID"
+    )
 
-    # Combine all rejected records
-    rejected_df = pd.concat(rejected_records, ignore_index=True)
+    rejected_records.append(
+        duplicate_sales
+    )
+
+    rejected_df = pd.concat(
+        rejected_records,
+        ignore_index=True
+    )
+
+    rejected_df = rejected_df.drop_duplicates()
 
     return rejected_df
 
 
-def create_clean_sales(sales_df):
+# ==========================
+# Create Clean Dataset
+# ==========================
 
-    cleaned_df = sales_df.dropna(
+def create_clean_sales(
+    sales_df: pd.DataFrame
+) -> pd.DataFrame:
+
+    cleaned_df = sales_df.copy()
+
+    cleaned_df = cleaned_df.dropna(
         subset=[
             "sale_id",
             "product_id",
@@ -86,6 +179,7 @@ def create_clean_sales(sales_df):
         cleaned_df["quantity"] > 0
     ]
 
+    # Remove ALL duplicate sale IDs
     cleaned_df = cleaned_df[
         ~cleaned_df.duplicated(
             subset=["sale_id"],
@@ -93,10 +187,55 @@ def create_clean_sales(sales_df):
         )
     ]
 
+    # Standardize IDs
+
+    cleaned_df["sale_id"] = (
+        cleaned_df["sale_id"]
+        .astype(str)
+        .str.strip()
+        .str.upper()
+    )
+
+    cleaned_df["product_id"] = (
+        cleaned_df["product_id"]
+        .astype(str)
+        .str.strip()
+        .str.upper()
+    )
+
+    cleaned_df["store_id"] = (
+        cleaned_df["store_id"]
+        .astype(str)
+        .str.strip()
+        .str.upper()
+    )
+
+    cleaned_df["customer_id"] = (
+        cleaned_df["customer_id"]
+        .astype(str)
+        .str.strip()
+        .str.upper()
+    )
+
+    if "sale_date" in cleaned_df.columns:
+
+        cleaned_df["sale_date"] = (
+            pd.to_datetime(
+                cleaned_df["sale_date"],
+                errors="coerce"
+            )
+        )
+
     return cleaned_df
 
 
-def save_rejected_sales(rejected_df):
+# ==========================
+# Save Files
+# ==========================
+
+def save_rejected_sales(
+    rejected_df: pd.DataFrame
+) -> None:
 
     rejected_df.to_csv(
         REJECTED_DIR / "rejected_sales.csv",
@@ -104,41 +243,80 @@ def save_rejected_sales(rejected_df):
     )
 
 
-def save_clean_sales(cleaned_df):
+def save_clean_sales(
+    cleaned_df: pd.DataFrame
+) -> None:
 
     cleaned_df.to_csv(
-        CLEANED_DIR / "clean_sales.csv",
+        CLEANED_DIR / "cleaned_sales.csv",
         index=False
     )
 
 
+# ==========================
+# Main
+# ==========================
+
 if __name__ == "__main__":
 
-    # Extract
     sales_df = extract_sales()
-    print("===============ORIGINAL DATA=========================")
+
+    print(
+        "\n========== ORIGINAL SALES =========="
+    )
+
     print(sales_df)
 
-    # Clean
-    sales_df = clean_sales(sales_df)
+    sales_df = clean_sales(
+        sales_df
+    )
 
-    # Validate
-    rejected_df = validate_sales(sales_df)
+    rejected_df = validate_sales(
+        sales_df
+    )
 
-    # Create Clean Dataset
-    cleaned_df = create_clean_sales(sales_df)
+    cleaned_df = create_clean_sales(
+        sales_df
+    )
 
-    # Save Files
-    save_clean_sales(cleaned_df)
-    save_rejected_sales(rejected_df)
+    save_clean_sales(
+        cleaned_df
+    )
 
-    # Summary
-    print("\n===== SALES VALIDATION SUMMARY =====")
-    print("Valid Records   :", len(cleaned_df))
-    print("Rejected Records:", len(rejected_df))
+    save_rejected_sales(
+        rejected_df
+    )
 
-    print("\n=============== CLEANED DATA ================")
+    print(
+        "\n========== SALES VALIDATION SUMMARY =========="
+    )
+
+    print(
+        f"Valid Records : {len(cleaned_df)}"
+    )
+
+    print(
+        f"Rejected Records : {len(rejected_df)}"
+    )
+
+    print(
+        "\n========== CLEANED SALES =========="
+    )
+
     print(cleaned_df)
 
-    print("\n=============== REJECTED DATA ===============")
+    print(
+        "\n========== REJECTED SALES =========="
+    )
+
     print(rejected_df)
+
+    print(
+        "\nFiles Generated Successfully!"
+    )
+
+    print(
+        "\nCreated:\n"
+        "data/cleaned/cleaned_sales.csv\n"
+        "data/rejected/rejected_sales.csv"
+    )

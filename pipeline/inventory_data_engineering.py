@@ -6,7 +6,7 @@ import pandas as pd
 def inventory_extract() -> pd.DataFrame:
 
     inventory = pd.read_csv(
-        "data/Inventory.csv",
+        "data/csv_files/inventory.csv",
         encoding="utf-8-sig"
     )
 
